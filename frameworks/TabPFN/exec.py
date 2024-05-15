@@ -2,13 +2,16 @@ import logging
 from importlib.metadata import version
 import numpy as np
 import pandas as pd
+import torch
 
 from frameworks.shared.callee import call_run, result
 from frameworks.shared.utils import load_timeseries_dataset
 
 from tabpfn import TabPFNRegressor
+from tabpfn.model.bar_distribution import FullSupportBarDistribution
 
 TABPFN_VERSION = version("tabpfn")
+TABPFN_DEFAULT_QUANTILE = [i / 10 for i in range(1, 10)]
 
 
 logger = logging.getLogger(__name__)
@@ -41,17 +44,30 @@ def run(dataset, config):
 
     model = TabPFNRegressor()
     model.fit(train_X, train_y)
-    pred = model.predict(test_X)
+    pred = model.predict_full(test_X)
 
     # Crucial for the result to be interpreted as TimeSeriesResults
     optional_columns = dict(
         repeated_item_id=np.load(dataset.repeated_item_id)[:len(test_y)],
-        repeated_abs_seasonal_error=np.load(dataset.repeated_abs_seasonal_error)[:len(test_y)],
+        repeated_abs_seasonal_error=np.load(dataset.repeated_abs_seasonal_error)[
+                                    :len(test_y)],
     )
+
+    # Get quantile predictions
+    for q in config.quantile_levels:
+        if q in TABPFN_DEFAULT_QUANTILE:
+            quantile_pred = pred[f"quantile_{q:.2f}"]
+
+        else:
+            criterion: FullSupportBarDistribution = pred["criterion"]
+            logits = torch.tensor(pred["logits"])
+            quantile_pred = criterion.icdf(logits, q).numpy()
+
+        optional_columns[str(q)] = quantile_pred
 
     return result(
         output_file=config.output_predictions_file,
-        predictions=pred,
+        predictions=pred["mean"],
         truth=test_y.values,
         target_is_encoded=False,
         models_count=1,
