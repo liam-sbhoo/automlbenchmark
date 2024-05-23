@@ -45,9 +45,11 @@ def run(dataset, config):
     # TODO: Call groupby to split the dataset into multiple time-series (items)
     # TODO: Implement parallization for TabPFN (imagine config.cores > 1)
 
+    model = TabPFNRegressor(device="cuda" if torch.cuda.is_available() else "cpu")
+    logger.info(f"Using device: {model.device}")
+
     with Timer() as predict:
         # TabPFN fit and predict at the same time (single forward pass)
-        model = TabPFNRegressor()
         model.fit(train_X, train_y)
         pred = model.predict_full(test_X)
 
