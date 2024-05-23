@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 
 from frameworks.shared.callee import call_run, result
-from frameworks.shared.utils import load_timeseries_dataset
+from frameworks.shared.utils import load_timeseries_dataset, Timer
 
 from tabpfn import TabPFNRegressor
 from tabpfn.model.bar_distribution import FullSupportBarDistribution
@@ -42,9 +42,14 @@ def run(dataset, config):
         test_df_single, target_col=dataset.target
     )
 
-    model = TabPFNRegressor()
-    model.fit(train_X, train_y)
-    pred = model.predict_full(test_X)
+    # TODO: Call groupby to split the dataset into multiple time-series (items)
+    # TODO: Implement parallization for TabPFN (imagine config.cores > 1)
+
+    with Timer() as predict:
+        # TabPFN fit and predict at the same time (single forward pass)
+        model = TabPFNRegressor()
+        model.fit(train_X, train_y)
+        pred = model.predict_full(test_X)
 
     # Crucial for the result to be interpreted as TimeSeriesResults
     optional_columns = dict(
@@ -71,8 +76,8 @@ def run(dataset, config):
         truth=test_y.values,
         target_is_encoded=False,
         models_count=1,
-        training_duration=2,
-        predict_duration=3,
+        training_duration=0.0,
+        predict_duration=predict.duration,
         optional_columns=pd.DataFrame(optional_columns),
     )
 
