@@ -17,7 +17,7 @@ TABPFN_DEFAULT_QUANTILE = [i / 10 for i in range(1, 10)]
 logger = logging.getLogger(__name__)
 
 
-def split_time_series_dataset_to_X_y(df, target_col="target"):
+def split_time_series_to_X_y(df, target_col="target"):
     X = df.drop(columns=[target_col])
     y = df[target_col]
     return X, y
@@ -26,56 +26,70 @@ def split_time_series_dataset_to_X_y(df, target_col="target"):
 def run(dataset, config):
     logger.info(f"**** TabPFN TimeSeries [v{TABPFN_VERSION}] ****")
 
-    train_df, test_df = load_timeseries_dataset(dataset)
-
-    # (Temporary) Loop through all items in the dataset
-    selected_item_id = train_df[dataset.id_column].unique()[0]
-    train_df_single = train_df[train_df[dataset.id_column] == selected_item_id].drop(
-        columns=[dataset.id_column])
-    test_df_single = test_df[test_df[dataset.id_column] == selected_item_id].drop(
-        columns=[dataset.id_column])
-
-    train_X, train_y = split_time_series_dataset_to_X_y(
-        train_df_single, target_col=dataset.target
-    )
-    test_X, test_y = split_time_series_dataset_to_X_y(
-        test_df_single, target_col=dataset.target
-    )
-
-    # TODO: Call groupby to split the dataset into multiple time-series (items)
-    # TODO: Implement parallization for TabPFN (imagine config.cores > 1)
-
+    # Initialize TabPFN model
     model = TabPFNRegressor(device="cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {model.device}")
 
-    with Timer() as predict:
-        # TabPFN fit and predict at the same time (single forward pass)
-        model.fit(train_X, train_y)
-        pred = model.predict_full(test_X)
+    train_df, test_df = load_timeseries_dataset(dataset)
+
+    # # Debug
+    # selected_item_ids = train_df['item_id'].unique()[:3]
+    # train_df = train_df[train_df['item_id'].isin(selected_item_ids)]
+    # test_df = test_df[test_df['item_id'].isin(selected_item_ids)]
+
+    # Sort and group by item_id
+    group_key = "item_id"
+    train_df.sort_values(by=[group_key], inplace=True)
+    test_df.sort_values(by=[group_key], inplace=True)
+    train_grouped = train_df.groupby(group_key)
+    test_grouped = test_df.groupby(group_key)
+
+    # Perform prediction for each time-series
+    all_pred = {"mean": []} | {str(q): [] for q in config.quantile_levels}
+    for (train_id, train_group), (test_id, test_group) in zip(train_grouped, test_grouped):
+        assert train_id == test_id
+
+        train_group.drop(columns=[group_key], inplace=True)
+        test_group.drop(columns=[group_key], inplace=True)
+
+        train_X, train_y = split_time_series_to_X_y(train_group)
+        test_X, test_y = split_time_series_to_X_y(test_group)
+
+        with Timer() as predict:
+            # TabPFN fit and predict at the same time (single forward pass)
+            model.fit(train_X, train_y)
+            pred = model.predict_full(test_X)
+            all_pred["mean"].append(pred["mean"])
+
+            # Get quantile predictions
+            for q in config.quantile_levels:
+                if q in TABPFN_DEFAULT_QUANTILE:
+                    quantile_pred = pred[f"quantile_{q:.2f}"]   # (n_horizon, )
+
+                else:
+                    criterion: FullSupportBarDistribution = pred["criterion"]
+                    logits = torch.tensor(pred["logits"])
+                    quantile_pred = criterion.icdf(logits, q).numpy()   # (n_horizon, )
+
+                all_pred[str(q)].append(quantile_pred)
+
+    # Concatenate all quantile predictions
+    for k in all_pred.keys():
+        all_pred[k] = np.concatenate(all_pred[k], axis=0)   # (n_item * n_horizon,)
 
     # Crucial for the result to be interpreted as TimeSeriesResults
     optional_columns = dict(
-        repeated_item_id=np.load(dataset.repeated_item_id)[:len(test_y)],
-        repeated_abs_seasonal_error=np.load(dataset.repeated_abs_seasonal_error)[
-                                    :len(test_y)],
+        repeated_item_id=np.load(dataset.repeated_item_id)[:test_df.shape[0]],
+        repeated_abs_seasonal_error=np.load(dataset.repeated_abs_seasonal_error)[:test_df.shape[0]]
     )
 
-    # Get quantile predictions
     for q in config.quantile_levels:
-        if q in TABPFN_DEFAULT_QUANTILE:
-            quantile_pred = pred[f"quantile_{q:.2f}"]
-
-        else:
-            criterion: FullSupportBarDistribution = pred["criterion"]
-            logits = torch.tensor(pred["logits"])
-            quantile_pred = criterion.icdf(logits, q).numpy()
-
-        optional_columns[str(q)] = quantile_pred
+        optional_columns[str(q)] = all_pred[str(q)]
 
     return result(
         output_file=config.output_predictions_file,
-        predictions=pred["mean"],
-        truth=test_y.values,
+        predictions=all_pred["mean"],
+        truth=test_df[dataset.target].values,
         target_is_encoded=False,
         models_count=1,
         training_duration=0.0,
