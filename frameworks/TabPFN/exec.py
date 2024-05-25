@@ -3,6 +3,7 @@ from importlib.metadata import version
 import numpy as np
 import pandas as pd
 import torch
+from tqdm import tqdm
 
 from frameworks.shared.callee import call_run, result
 from frameworks.shared.utils import load_timeseries_dataset, Timer
@@ -27,7 +28,10 @@ def run(dataset, config):
     logger.info(f"**** TabPFN TimeSeries [v{TABPFN_VERSION}] ****")
 
     # Initialize TabPFN model
-    model = TabPFNRegressor(device="cuda" if torch.cuda.is_available() else "cpu")
+    model = TabPFNRegressor(
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        show_progress=False,
+    )
     logger.info(f"Using device: {model.device}")
 
     train_df, test_df = load_timeseries_dataset(dataset)
@@ -43,10 +47,13 @@ def run(dataset, config):
     test_df.sort_values(by=[group_key], inplace=True)
     train_grouped = train_df.groupby(group_key)
     test_grouped = test_df.groupby(group_key)
+    assert len(train_grouped) == len(test_grouped)
 
     # Perform prediction for each time-series
     all_pred = {"mean": []} | {str(q): [] for q in config.quantile_levels}
-    for (train_id, train_group), (test_id, test_group) in zip(train_grouped, test_grouped):
+    for (train_id, train_group), (test_id, test_group) in tqdm(zip(train_grouped, test_grouped),
+                                                               total=len(train_grouped),
+                                                               desc="Processing Groups"):
         assert train_id == test_id
 
         train_group.drop(columns=[group_key], inplace=True)
