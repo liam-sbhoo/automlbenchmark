@@ -14,6 +14,7 @@ fi
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 DOWNLOAD_DATASETS_SCRIPT=$SCRIPT_DIR/download_datasets.py
 GENERATE_TASK_CONFIGS_SCRIPT=$SCRIPT_DIR/generate_task_configs.py
+GENERATE_ID_2_TASK_MAPPING_SCRIPT=$SCRIPT_DIR/generate_array_id_to_task_mapping.py
 ROOT_DIR=$SCRIPT_DIR/../..
 
 # Download M3C dataset if it does not exist
@@ -37,6 +38,7 @@ python $DOWNLOAD_DATASETS_SCRIPT -d $DATASETS_DIR
 
 # Generate tasks config (stored to default location: $HOME/.config/automlbenchmark/benchmarks)
 python $GENERATE_TASK_CONFIGS_SCRIPT -d $DATASETS_DIR
+python $GENERATE_ID_2_TASK_MAPPING_SCRIPT $HOME/.config/automlbenchmark/benchmarks
 
 ### End of python venv
 deactivate
