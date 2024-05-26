@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script could be used to download and prepare the datasets for time-series forecasting.
+# This script could be used to prepare the datasets and tasks config for time-series forecast benchmark.
 
 DATASETS_DIR=$1
 
@@ -13,6 +13,7 @@ fi
 # Get the directory where the script is located
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 DOWNLOAD_DATASETS_SCRIPT=$SCRIPT_DIR/download_datasets.py
+GENERATE_TASK_CONFIGS_SCRIPT=$SCRIPT_DIR/generate_task_configs.py
 ROOT_DIR=$SCRIPT_DIR/../..
 
 # Download M3C dataset if it does not exist
@@ -21,7 +22,7 @@ if [ ! -f $DATASETS_DIR/M3C.xls ]; then
     wget https://forecasters.org/data/m3comp/M3C.xls -P $DATASETS_DIR
 fi
 
-# Create a temporary virtual environment to run the script
+### Start of python venv
 VENV_NAME=temp_venv
 if [ -d "$VENV_NAME" ]; then
     echo "Cleaning up existing virtual environment..."
@@ -30,9 +31,13 @@ fi
 python3 -m venv $VENV_NAME
 source $VENV_NAME/bin/activate
 pip install gluonts pandas orjson pyyaml xlrd awscli joblib
+
+# Download datasets
 python $DOWNLOAD_DATASETS_SCRIPT -d $DATASETS_DIR
+
+# Generate tasks config (stored to default location: $HOME/.config/automlbenchmark/benchmarks)
+python $GENERATE_TASK_CONFIGS_SCRIPT -d $DATASETS_DIR
+
+### End of python venv
 deactivate
 rm -rf $VENV_NAME
-
-# Verify the datasets
-python $ROOT_DIR/runbenchmark.py SeasonalNaive timeseries
