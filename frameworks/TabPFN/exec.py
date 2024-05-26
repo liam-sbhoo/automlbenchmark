@@ -51,6 +51,7 @@ def run(dataset, config):
 
     # Perform prediction for each time-series
     all_pred = {"mean": []} | {str(q): [] for q in config.quantile_levels}
+    predict_duration = 0.0
     for (train_id, train_group), (test_id, test_group) in tqdm(zip(train_grouped, test_grouped),
                                                                total=len(train_grouped),
                                                                desc="Processing Groups"):
@@ -62,23 +63,24 @@ def run(dataset, config):
         train_X, train_y = split_time_series_to_X_y(train_group)
         test_X, test_y = split_time_series_to_X_y(test_group)
 
+        # TabPFN fit and predict at the same time (single forward pass)
+        model.fit(train_X, train_y)
         with Timer() as predict:
-            # TabPFN fit and predict at the same time (single forward pass)
-            model.fit(train_X, train_y)
             pred = model.predict_full(test_X)
-            all_pred["mean"].append(pred["mean"])
+        predict_duration += predict.duration
+        all_pred["mean"].append(pred["mean"])
 
-            # Get quantile predictions
-            for q in config.quantile_levels:
-                if q in TABPFN_DEFAULT_QUANTILE:
-                    quantile_pred = pred[f"quantile_{q:.2f}"]   # (n_horizon, )
+        # Get quantile predictions
+        for q in config.quantile_levels:
+            if q in TABPFN_DEFAULT_QUANTILE:
+                quantile_pred = pred[f"quantile_{q:.2f}"]   # (n_horizon, )
 
-                else:
-                    criterion: FullSupportBarDistribution = pred["criterion"]
-                    logits = torch.tensor(pred["logits"])
-                    quantile_pred = criterion.icdf(logits, q).numpy()   # (n_horizon, )
+            else:
+                criterion: FullSupportBarDistribution = pred["criterion"]
+                logits = torch.tensor(pred["logits"])
+                quantile_pred = criterion.icdf(logits, q).numpy()   # (n_horizon, )
 
-                all_pred[str(q)].append(quantile_pred)
+            all_pred[str(q)].append(quantile_pred)
 
     # Concatenate all quantile predictions
     for k in all_pred.keys():
