@@ -102,7 +102,7 @@ def run(dataset, config):
         target_is_encoded=False,
         models_count=1,
         training_duration=0.0,
-        predict_duration=predict.duration,
+        predict_duration=predict_duration,
         optional_columns=pd.DataFrame(optional_columns),
     )
 
