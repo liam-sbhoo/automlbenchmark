@@ -1,4 +1,7 @@
 #!/bin/bash
+# Usage: sbatch run_benchmark_slurm.sh <framework> <benchmark>
+
+
 #SBATCH --job-name=time_series_benchmark
 #SBATCH --nodes=1                             # Number of nodes
 #SBATCH --gres=gpu:1                          # Number of GPUs
