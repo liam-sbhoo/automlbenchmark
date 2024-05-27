@@ -27,6 +27,7 @@ with open('$ID_TO_TASK_MAPPING_PATH', 'r') as file:
     print(tasks[int($SLURM_ARRAY_TASK_ID)])
 EOF
 )
+WANDB_PROJECT="tabpfn-time-series"
 
 echo "Running benchmark on task $TASK_NAME"
-python runbenchmark.py $FRAMEWORK $BENCHMARK -t $TASK_NAME
+python runbenchmark.py $FRAMEWORK $BENCHMARK -t $TASK_NAME --wandb_project $WANDB_PROJECT
