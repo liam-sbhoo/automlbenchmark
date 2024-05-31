@@ -40,6 +40,9 @@ python $DOWNLOAD_DATASETS_SCRIPT -d $DATASETS_DIR
 python $GENERATE_TASK_CONFIGS_SCRIPT -d $DATASETS_DIR
 python $GENERATE_ID_2_TASK_MAPPING_SCRIPT $HOME/.config/automlbenchmark/benchmarks
 
+# Copy the generated task config to the benchmark directory
+cp $HOME/.config/automlbenchmark/benchmarks/* $ROOT_DIR/resources/benchmarks
+
 ### End of python venv
 deactivate
 rm -rf $VENV_NAME

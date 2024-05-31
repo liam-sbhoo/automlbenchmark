@@ -12,7 +12,7 @@
 #SBATCH --output=slurm_out/job_output_%j.txt  # Standard output and error log (%j expands to jobId)
 
 # Load any modules or source your environment here if necessary
-module load python
+#module load python
 
 # Run the experiment script with the SLURM_ARRAY_TASK_ID as an argument
 AUTOMLBENCHMARK_CONFIG_PATH="$HOME/.config/automlbenchmark/benchmarks"
