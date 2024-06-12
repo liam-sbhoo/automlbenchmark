@@ -5,7 +5,7 @@
 #SBATCH --job-name=time_series_benchmark
 #SBATCH --nodes=1                             # Number of nodes
 #SBATCH --gres=gpu:1                          # Number of GPUs
-#SBATCH --ntasks-per-node=1                   # Number of tasks per nosqde
+#SBATCH --ntasks-per-node=1                   # Number of tasks per node
 #SBATCH --cpus-per-task=16                    # Number of CPU cores per task
 #SBATCH --mem=32G                             # Total memory limit
 #SBATCH --array=0-28                          # Total number of datasets in the benchmark
