@@ -1,0 +1,7 @@
+# Requirements for visualizing the results
+wandb
+matplotlib
+jupyter
+
+# Requirements for running the experiment on SLURM
+pyyaml
