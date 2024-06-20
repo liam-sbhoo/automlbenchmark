@@ -16,6 +16,7 @@ DOWNLOAD_DATASETS_SCRIPT=$SCRIPT_DIR/download_datasets.py
 GENERATE_TASK_CONFIGS_SCRIPT=$SCRIPT_DIR/generate_task_configs.py
 GENERATE_ID_2_TASK_MAPPING_SCRIPT=$SCRIPT_DIR/generate_array_id_to_task_mapping.py
 ROOT_DIR=$SCRIPT_DIR/../..
+BENCHMARK_FILES_OUTPUT_DIR=$HOME/.config/automlbenchmark/benchmarks
 
 # Download M3C dataset if it does not exist
 mkdir -p $DATASETS_DIR
@@ -31,14 +32,15 @@ if [ -d "$VENV_NAME" ]; then
 fi
 python3 -m venv $VENV_NAME
 source $VENV_NAME/bin/activate
-pip install gluonts pandas orjson pyyaml xlrd awscli joblib
+pip install gluonts pandas==1.5.3 orjson pyyaml xlrd awscli joblib
 
 # Download datasets
 python $DOWNLOAD_DATASETS_SCRIPT -d $DATASETS_DIR
 
-# Generate tasks config (stored to default location: $HOME/.config/automlbenchmark/benchmarks)
-python $GENERATE_TASK_CONFIGS_SCRIPT -d $DATASETS_DIR
-python $GENERATE_ID_2_TASK_MAPPING_SCRIPT $HOME/.config/automlbenchmark/benchmarks
+# Generate tasks config
+NUM_SERIES_THRESHOLD=10000
+python $GENERATE_TASK_CONFIGS_SCRIPT -d $DATASETS_DIR -b $BENCHMARK_FILES_OUTPUT_DIR -s $NUM_SERIES_THRESHOLD
+python $GENERATE_ID_2_TASK_MAPPING_SCRIPT $BENCHMARK_FILES_OUTPUT_DIR/point_forecast_skip_${NUM_SERIES_THRESHOLD}.yaml $BENCHMARK_FILES_OUTPUT_DIR
 
 # Copy the generated task config to the benchmark directory
 cp $HOME/.config/automlbenchmark/benchmarks/* $ROOT_DIR/resources/benchmarks
