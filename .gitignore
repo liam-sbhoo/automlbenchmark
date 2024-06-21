@@ -49,6 +49,3 @@ Singularityfile
 !reports/**/*.csv
 !reports/**/*.png
 !docs/img/**/*.png
-
-# macOS specific cache
-**/.DS_Store
