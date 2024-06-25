@@ -259,6 +259,8 @@ TunedRandomForest:
 
 TabPFN:
   version: 'stable'
+  params:
+    method: naive
 
 
 StatsForecast:

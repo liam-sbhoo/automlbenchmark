@@ -16,11 +16,16 @@ TABPFN_DEFAULT_QUANTILE = [i / 10 for i in range(1, 10)]
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_METHOD = "naive"
+METHOD_MAP = {
+    "naive": NaiveTabPFNTimeSeriesPredictor,
+}
 
-def split_time_series_to_X_y(df, target_col="target"):
-    X = df.drop(columns=[target_col])
-    y = df[target_col]
-    return X, y
+
+def get_method(method_name):
+    if method_name not in METHOD_MAP:
+        raise ValueError(f"Method {method_name} not found")
+    return METHOD_MAP[method_name]
 
 
 def run(dataset, config):
@@ -31,10 +36,12 @@ def run(dataset, config):
         "device": "cuda" if torch.cuda.is_available() else "cpu",
         "show_progress": False,
     }
-    predictor = NaiveTabPFNTimeSeriesPredictor(
+    method_name = config.framework_params.get("method", DEFAULT_METHOD)
+    predictor = get_method(method_name)(
         tabpfn_model_config=tabpfn_model_config,
         quantile_config=config.quantile_levels,
     )
+    logger.info(f"Using method: {predictor.__class__.__name__}")
 
     train_df, test_df = map(TimeSeriesDataFrame, load_timeseries_dataset(dataset))
     all_pred, meta = predictor.predict(train_df, test_df)
