@@ -15,6 +15,19 @@ from amlb.utils import Namespace as ns, config_load, datetime_iso, str2bool, str
 from amlb import log, AutoMLError
 from amlb.defaults import default_dirs
 
+
+# Define a custom logging handler that logs to wandb
+from amlb.benchmark import log
+import logging
+import wandb
+
+
+class WandbLoggerHandler(logging.Handler):
+    def emit(self, record):
+        log_entry = self.format(record)
+        wandb.log({"log": log_entry})
+
+
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('framework', type=str,
                     help="The framework to evaluate as defined by default in resources/frameworks.yaml."
@@ -89,6 +102,11 @@ parser.add_argument('--session', type=str, default=None, help=argparse.SUPPRESS)
 parser.add_argument('-X', '--extra', default=[], action='append', help=argparse.SUPPRESS)
 parser.add_argument("--wandb_project", type=str, default=None,
                     help="If set, results will be logged to WandB under the specified project name.")
+parser.add_argument("--wandb_tags", nargs='+', type=str, default=None,
+                    help="Tags for the WandB run.")
+parser.add_argument("--debug_jid", type=str, default=None, help="Debug job id.")
+parser.add_argument("--wandb_group_id", type=str, default=None)
+
 # group = parser.add_mutually_exclusive_group()
 # group.add_argument('--keep-scores', dest='keep_scores', action='store_true',
 #                    help="Set to true [default] to save/add scores in output directory")
@@ -101,6 +119,11 @@ parser.add_argument("--wandb_project", type=str, default=None,
 #                     help="The region on which to run the benchmark when using AWS.")
 
 args = parser.parse_args()
+
+if args.wandb_project:
+    wandb.init(project=args.wandb_project, tags=args.wandb_tags, group=args.wandb_group_id)
+    log.addHandler(WandbLoggerHandler())
+
 script_name = os.path.splitext(os.path.basename(__file__))[0]
 extras = {t[0]: t[1] if len(t) > 1 else True for t in [x.split('=', 1) for x in args.extra]}
 
@@ -188,14 +211,30 @@ try:
 
     bench.setup(amlb.SetupMode[args.setup])
     if args.setup != 'only':
+
+        if args.wandb_project:
+            config = {
+                "framework": bench.framework_name,
+                "benchmark": bench.benchmark_name,
+                "constraint": bench.constraint_name,
+                "job_id": args.debug_jid,
+                "task": args.task,
+            }
+            wandb.log(config)
+
         res = bench.run(args.task, args.fold)
 
     if args.wandb_project:
-        import wandb
-        wandb.init(project=args.wandb_project)
 
-        for record in res.to_dict("records"):
-            wandb.log(record)
+        # A little hack to log task results to wandb
+        # Sometimes this results contains data from multiple task.
+        if len(args.task) == 1:
+            wandb.log(res[res["task"] == args.task[0]].to_dict("records")[0])
+
+        else:
+            for record in res.to_dict("records"):
+                wandb.log(record)
+
         wandb.finish()
 
 except (ValueError, AutoMLError) as e:

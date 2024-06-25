@@ -1,2 +1,0 @@
-# Requirements for visualizing the results
-wandb

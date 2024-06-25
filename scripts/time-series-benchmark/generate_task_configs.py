@@ -14,36 +14,37 @@ default_dataset_dir = str(amlb_dir / "datasets")
 default_benchmark_dir = str(Path.home() / ".config" / "automlbenchmark" / "benchmarks")
 
 
-name_to_prediction_length = {
-    "car_parts": 12,
-    "cif_2016": 12,
-    "covid_deaths": 30,
-    "electricity_hourly": 48,
-    "electricity_weekly": 8,
-    "fred_md": 12,
-    "hospital": 12,
-    "kdd_cup_2018": 48,
-    "m1_monthly": 18,
-    "m1_quarterly": 8,
-    "m1_yearly": 6,
-    "m3_monthly": 18,
-    "m3_other": 8,
-    "m3_quarterly": 8,
-    "m3_yearly": 6,
-    "m4_daily": 14,
-    "m4_hourly": 48,
-    "m4_weekly": 13,
-    "m4_yearly": 6,
-    "m4_monthly": 12,
-    "m4_quarterly": 8,
-    "nn5_daily": 56,
-    "nn5_weekly": 8,
-    "pedestrian_counts": 48,
-    "tourism_monthly": 24,
-    "tourism_quarterly": 8,
-    "tourism_yearly": 4,
-    "vehicle_trips": 7,
-    "web_traffic_weekly": 8,
+dataset_metadata = {
+    # dataset_name: (num_series, prediction_length)
+    "car_parts": (2674, 12),
+    "cif_2016": (72, 12),
+    "covid_deaths": (266, 30),
+    "electricity_hourly": (321, 48),
+    "electricity_weekly": (321, 8),
+    "fred_md": (107, 12),
+    "hospital": (767, 12),
+    "kdd_cup_2018": (270, 48),
+    "m1_monthly": (617, 18),
+    "m1_quarterly": (203, 8),
+    "m1_yearly": (181, 6),
+    "m3_monthly": (1428, 18),
+    "m3_other": (174, 8),
+    "m3_quarterly": (756, 8),
+    "m3_yearly": (645, 6),
+    "m4_daily": (4227, 14),
+    "m4_hourly": (414, 48),
+    "m4_monthly": (48000, 18),
+    "m4_quarterly": (24000, 8),
+    "m4_weekly": (359, 13),
+    "m4_yearly": (22974, 6),
+    "nn5_daily": (111, 56),
+    "nn5_weekly": (111, 8),
+    "pedestrian_counts": (66, 48),
+    "tourism_monthly": (366, 24),
+    "tourism_quarterly": (427, 8),
+    "tourism_yearly": (518, 4),
+    "vehicle_trips": (262, 7),
+    "web_traffic_weekly": (145063, 8),
 }
 
 freq_to_seasonality = {"H": 24, "D": 7, "W": 1, "M": 12, "Q": 4, "A": 1}
@@ -68,7 +69,7 @@ def generate_task(name: str, base_dir: str, metrics: List[str]) -> dict:
             "path": str(path_to_data),
             "type": "timeseries",
             "target": "target",
-            "forecast_horizon_in_steps": name_to_prediction_length[name],
+            "forecast_horizon_in_steps": dataset_metadata[name][1],
             "freq": freq,
             "seasonality": freq_to_seasonality[freq],
         },
@@ -95,26 +96,45 @@ if __name__ == "__main__":
         default=default_benchmark_dir,
         help="Local path to a folder where to save the YAML config files.",
     )
+    parser.add_argument(
+        "-s",
+        "--skip-time-series-num-threshold",
+        type=int,
+        default=-1,
+        help="Skip time series with more than this many data points.",
+    )
     args = parser.parse_args()
 
     dataset_dir = args.dataset_dir
     benchmark_dir = Path(args.benchmark_dir)
     benchmark_dir.mkdir(exist_ok=True, parents=True)
 
+    if args.skip_time_series_num_threshold > 0:
+        selected_dataset = {
+            name
+            for name, (num_series, _) in dataset_metadata.items()
+            if num_series <= args.skip_time_series_num_threshold
+        }
+    else:
+        selected_dataset = dataset_metadata.keys()
+
     print(f"Saving task definitions to {benchmark_dir}")
     point_forecast_tasks = [
         generate_task(name, dataset_dir, metrics=["mase", "wql"])
-        for name in name_to_prediction_length
+        for name in selected_dataset
     ]
     quantile_forecast_tasks = [
         generate_task(name, dataset_dir, metrics=["wql", "mase"])
-        for name in name_to_prediction_length
+        for name in selected_dataset
     ]
 
     if dataset_dir.startswith("s3://"):
         suffix = "_aws"
     else:
         suffix = ""
+
+    if args.skip_time_series_num_threshold > 0:
+        suffix += f"_skip_{args.skip_time_series_num_threshold}"
 
     with open(benchmark_dir / f"point_forecast{suffix}.yaml", "w") as out_file:
         yaml.safe_dump(

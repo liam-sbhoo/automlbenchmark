@@ -52,3 +52,9 @@ Singularityfile
 
 # macOS specific cache
 **/.DS_Store
+
+# Custom
+**/generated
+slurm_out
+wandb
+frameworks/TabPFN/secret_link.txt
