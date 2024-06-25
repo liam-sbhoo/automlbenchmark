@@ -50,7 +50,7 @@ class TimeSeriesDatasetLoader:
             name: str,
             num_fold: int = 0,
             num_series: int | None = None,
-        ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        ) -> tuple[TimeSeriesDataFrame, TimeSeriesDataFrame]:
 
         if name not in self._datasets_config:
             raise ValueError(f"Dataset {name} not available")
