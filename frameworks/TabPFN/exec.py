@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
+from scipy.stats import norm
 
 from frameworks.shared.callee import call_run, result
 from frameworks.shared.utils import load_timeseries_dataset, Timer
@@ -36,11 +37,6 @@ def run(dataset, config):
 
     train_df, test_df = load_timeseries_dataset(dataset)
 
-    # # Debug
-    # selected_item_ids = train_df['item_id'].unique()[:3]
-    # train_df = train_df[train_df['item_id'].isin(selected_item_ids)]
-    # test_df = test_df[test_df['item_id'].isin(selected_item_ids)]
-
     # Sort and group by item_id
     group_key = "item_id"
     train_df.sort_values(by=[group_key], inplace=True)
@@ -50,41 +46,60 @@ def run(dataset, config):
     assert len(train_grouped) == len(test_grouped)
 
     # Perform prediction for each time-series
-    all_pred = {"mean": []} | {str(q): [] for q in config.quantile_levels}
-    predict_duration = 0.0
-    for (train_id, train_group), (test_id, test_group) in tqdm(zip(train_grouped, test_grouped),
+    all_pred = {str(q): [] for q in ["mean"] + config.quantile_levels}
+    with Timer() as predict:
+        count = 5
+        for (train_id, train_group), (test_id, test_group) in tqdm(zip(train_grouped, test_grouped),
                                                                total=len(train_grouped),
                                                                desc="Processing Groups"):
-        assert train_id == test_id
+            assert train_id == test_id
 
-        train_group.drop(columns=[group_key], inplace=True)
-        test_group.drop(columns=[group_key], inplace=True)
+            train_group.drop(columns=[group_key], inplace=True)
+            test_group.drop(columns=[group_key], inplace=True)
 
-        train_X, train_y = split_time_series_to_X_y(train_group)
-        test_X, test_y = split_time_series_to_X_y(test_group)
+            train_X, train_y = split_time_series_to_X_y(train_group)
+            test_X, _ = split_time_series_to_X_y(test_group)
 
-        # TabPFN fit and predict at the same time (single forward pass)
-        model.fit(train_X, train_y)
-        with Timer() as predict:
-            pred = model.predict_full(test_X)
-        predict_duration += predict.duration
-        all_pred["mean"].append(pred["mean"])
+            is_constant_value = (train_y.nunique() == 1)
 
-        # Get quantile predictions
-        for q in config.quantile_levels:
-            if q in TABPFN_DEFAULT_QUANTILE:
-                quantile_pred = pred[f"quantile_{q:.2f}"]   # (n_horizon, )
+            # TabPFN fit and predict at the same time (single forward pass)
+            if not is_constant_value:
+                with Timer() as training:
+                    model.fit(train_X, train_y)
+                pred = model.predict_full(test_X)
 
             else:
-                criterion: FullSupportBarDistribution = pred["criterion"]
-                logits = torch.tensor(pred["logits"])
-                quantile_pred = criterion.icdf(logits, q).numpy()   # (n_horizon, )
+                # If train_y is constant, we return the constant value from the training set
+                # For quantile prediction, we assume that the uncertainty follows a standard normal distribution
+                mean_constant = train_y.iloc[0]
+                pred = {"mean": np.full(len(test_X), mean_constant)}
 
-            all_pred[str(q)].append(quantile_pred)
+                quantile_pred_with_uncertainty = norm.ppf(config.quantile_levels, loc=mean_constant, scale=1)
+                for i, q in enumerate(config.quantile_levels):
+                    pred[f"quantile_{q:.2f}"] = np.full(len(test_X), quantile_pred_with_uncertainty[i])
 
-    # Concatenate all quantile predictions
-    for k in all_pred.keys():
-        all_pred[k] = np.concatenate(all_pred[k], axis=0)   # (n_item * n_horizon,)
+                logger.info(f"Found time-series with constant target")
+                logger.info(f"Prediction: mean_constant={mean_constant:.2f}, quantile_pred={quantile_pred_with_uncertainty}")
+
+            all_pred["mean"].append(pred["mean"])
+
+            # Get quantile predictions
+            for q in config.quantile_levels:
+                if q in TABPFN_DEFAULT_QUANTILE:
+                    quantile_pred = pred[f"quantile_{q:.2f}"]   # (n_horizon, )
+                else:
+                    criterion: FullSupportBarDistribution = pred["criterion"]
+                    logits = torch.tensor(pred["logits"])
+                    quantile_pred = criterion.icdf(logits, q).numpy()   # (n_horizon, )
+
+                all_pred[str(q)].append(quantile_pred)
+
+        # Concatenate all quantile predictions
+        for k in all_pred.keys():
+            all_pred[k] = np.concatenate(all_pred[k], axis=0)   # (n_item * n_horizon,)
+
+    training_duration = training.duration if not is_constant_value else 0.0
+    predict_duration = predict.duration - training_duration
 
     # Crucial for the result to be interpreted as TimeSeriesResults
     optional_columns = dict(
@@ -101,7 +116,7 @@ def run(dataset, config):
         truth=test_df[dataset.target].values,
         target_is_encoded=False,
         models_count=1,
-        training_duration=0.0,
+        training_duration=training_duration,
         predict_duration=predict_duration,
         optional_columns=pd.DataFrame(optional_columns),
     )
