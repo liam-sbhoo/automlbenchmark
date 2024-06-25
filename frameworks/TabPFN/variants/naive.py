@@ -36,6 +36,11 @@ class NaiveTabPFNTimeSeriesPredictor:
                 train_X, train_y = split_ts_dataset_to_X_y(train_df_item)
                 test_X, _ = split_ts_dataset_to_X_y(test_df_item)
 
+                if train_X.shape[1] == 0:
+                    # Use a counter as the feature
+                    train_X = np.arange(len(train_X)).reshape(-1, 1)
+                    test_X = np.arange(len(test_X)).reshape(-1, 1)
+
                 is_constant_value = (train_y.nunique() == 1)
                 if not is_constant_value:
                     with Timer() as training:
@@ -45,7 +50,6 @@ class NaiveTabPFNTimeSeriesPredictor:
                     pred = self.model.predict_full(test_X)
 
                 else:
-                    
                     # If train_y is constant, we return the constant value from the training set
                     # For quantile prediction, we assume that the uncertainty follows a standard normal distribution
                     logger.info(f"Found time-series with constant target")
@@ -72,9 +76,9 @@ class NaiveTabPFNTimeSeriesPredictor:
 
                     all_pred[str(q)].append(quantile_pred)
 
-                # Concatenate all quantile predictions
-                for k in all_pred.keys():
-                    all_pred[k] = np.concatenate(all_pred[k], axis=0)   # (n_item * n_horizon,)
+            # Concatenate all predictions
+            for k in all_pred.keys():
+                all_pred[k] = np.concatenate(all_pred[k], axis=0)   # (n_item * n_horizon,)
 
         prediction_duration = overall.duration - training_duration
 

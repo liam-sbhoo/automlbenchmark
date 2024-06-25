@@ -6,7 +6,8 @@ SECRET_URL=$(cat "${HERE}/secret_link.txt")
 
 . "${HERE}/../shared/setup.sh" "${HERE}" true
 
-PIP install --no-cache-dir -U ${SECRET_URL}
 PIP install --no-cache-dir -U autogluon.timeseries==1.1.1
+PIP install --no-cache-dir -U openml
+PIP install --no-cache-dir -U ${SECRET_URL}
 
 PY -c "from importlib.metadata import version; print(version('tabpfn'))" >> "${HERE}/.setup/installed"

@@ -6,8 +6,8 @@ import torch
 
 from frameworks.shared.callee import call_run, result
 from frameworks.shared.utils import load_timeseries_dataset
-
-from .variants import NaiveTabPFNTimeSeriesPredictor
+from autogluon.timeseries import TimeSeriesDataFrame
+from frameworks.TabPFN.variants import NaiveTabPFNTimeSeriesPredictor
 
 
 TABPFN_VERSION = version("tabpfn")
@@ -36,7 +36,7 @@ def run(dataset, config):
         quantile_config=config.quantile_levels,
     )
 
-    train_df, test_df = load_timeseries_dataset(dataset)
+    train_df, test_df = map(TimeSeriesDataFrame, load_timeseries_dataset(dataset))
     all_pred, meta = predictor.predict(train_df, test_df)
     
     # Crucial for the result to be interpreted as TimeSeriesResults
