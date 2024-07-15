@@ -39,26 +39,25 @@ def run(dataset, config):
 
     # Sort and group by item_id
     group_key = "item_id"
-    train_df.sort_values(by=[group_key], inplace=True)
-    test_df.sort_values(by=[group_key], inplace=True)
+    # train_df.sort_values(by=[group_key], inplace=True)
+    # test_df.sort_values(by=[group_key], inplace=True)
     train_grouped = train_df.groupby(group_key)
     test_grouped = test_df.groupby(group_key)
     assert len(train_grouped) == len(test_grouped)
 
+    print("test_df")
+    print(test_df)
+
     # Perform prediction for each time-series
     all_pred = {str(q): [] for q in ["mean"] + config.quantile_levels}
     with Timer() as predict:
-        count = 5
         for (train_id, train_group), (test_id, test_group) in tqdm(zip(train_grouped, test_grouped),
                                                                total=len(train_grouped),
                                                                desc="Processing Groups"):
             assert train_id == test_id
 
-            train_group.drop(columns=[group_key], inplace=True)
-            test_group.drop(columns=[group_key], inplace=True)
-
-            train_X, train_y = split_time_series_to_X_y(train_group)
-            test_X, _ = split_time_series_to_X_y(test_group)
+            train_X, train_y = split_time_series_to_X_y(train_group.drop(columns=[group_key]))
+            test_X, _ = split_time_series_to_X_y(test_group.drop(columns=[group_key]))
 
             is_constant_value = (train_y.nunique() == 1)
 
