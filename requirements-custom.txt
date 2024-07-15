@@ -1,3 +1,5 @@
+tqdm
+
 # Requirements for visualizing the results
 wandb
 matplotlib

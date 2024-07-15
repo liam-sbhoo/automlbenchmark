@@ -26,12 +26,13 @@ BENCHMARK_FILES_OUTPUT_DIR=$HOME/.config/automlbenchmark/benchmarks
 wget https://forecasters.org/data/m3comp/M3C.xls -P ~/.gluonts/datasets
 
 ### Start of python venv
-VENV_NAME=temp_venv
+VENV_NAME=time_series_benchmark_setup_venv
 if [ -d "$VENV_NAME" ]; then
-    echo "Cleaning up existing virtual environment..."
-    rm -rf $VENV_NAME
+    echo "Reusing existing virtual environment..."
+else
+    echo "Creating new virtual environment..."
+    python3 -m venv $VENV_NAME
 fi
-python3 -m venv $VENV_NAME
 source $VENV_NAME/bin/activate
 pip install gluonts==0.14.4 pandas==1.5.3 orjson pyyaml xlrd awscli joblib
 
@@ -48,4 +49,3 @@ cp $HOME/.config/automlbenchmark/benchmarks/* $ROOT_DIR/resources/benchmarks
 
 ### End of python venv
 deactivate
-rm -rf $VENV_NAME

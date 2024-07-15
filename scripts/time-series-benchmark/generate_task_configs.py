@@ -47,7 +47,9 @@ dataset_metadata = {
     "web_traffic_weekly": (145063, 8),
 }
 
-freq_to_seasonality = {"H": 24, "D": 7, "W": 1, "M": 12, "Q": 4, "A": 1}
+freq_to_seasonality = {"H": 24, "D": 7, "W": 1, "M": 12, "Q": 4, "A": 1}        # pandas==1.5.3
+# freq_to_seasonality = {"h": 24, "D": 7, "W": 1, "ME": 12, "QE": 4, "YE": 1}   # pandas==2.2.2
+
 
 
 def generate_task(name: str, base_dir: str, metrics: List[str]) -> dict:

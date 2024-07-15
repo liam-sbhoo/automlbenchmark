@@ -261,6 +261,18 @@ TabPFN:
   version: 'stable'
 
 
+TabPFN-TS:
+  version: 'stable'
+  params:
+    config_file: "naive_gpu.json"
+
+
+TabPFN-TS-SineCosine:
+  extends: TabPFN-TS
+  params:
+    config_file: "sin_cos_range_gpu.json"
+
+
 StatsForecast:
   version: 'stable'
   description: |
