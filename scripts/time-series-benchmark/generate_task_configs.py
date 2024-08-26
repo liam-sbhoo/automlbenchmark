@@ -47,6 +47,38 @@ dataset_metadata = {
     "web_traffic_weekly": (145063, 8),
 }
 
+dataset_mini = [
+    "car_parts",
+    "cif_2016",
+    "covid_deaths",
+    "electricity_hourly",
+    "electricity_weekly",
+    "fred_md",
+    "hospital",
+    "kdd_cup_2018",
+    "m1_monthly",
+    "m1_quarterly",
+    "m1_yearly",
+    "m3_monthly",
+    "m3_other",
+    "m3_quarterly",
+    "m3_yearly",
+    "m4_daily",
+    "m4_hourly",
+    "m4_monthly",
+    "m4_quarterly",
+    "m4_weekly",
+    "m4_yearly",
+    "nn5_daily",
+    "nn5_weekly",
+    "pedestrian_counts",
+    "tourism_monthly",
+    "tourism_quarterly",
+    "tourism_yearly",
+    "vehicle_trips",
+    "web_traffic_weekly",
+]
+
 freq_to_seasonality = {"H": 24, "D": 7, "W": 1, "M": 12, "Q": 4, "A": 1}        # pandas==1.5.3
 # freq_to_seasonality = {"h": 24, "D": 7, "W": 1, "ME": 12, "QE": 4, "YE": 1}   # pandas==2.2.2
 

@@ -200,17 +200,18 @@ class Benchmark:
         # anything to do?
         pass
 
-    def run(self, tasks: str | list[str] | None = None, folds: int | list[int] | None = None):
+    def run(self, tasks: str | list[str] | None = None, folds: int | list[int] | None = None, seed: int | None = None):
         """
         :param tasks: a single task name [str] or a list of task names to run. If None, then the whole benchmark will be used.
         :param folds: a fold [int] or a list of folds to run. If None, then the all folds from each task definition will be used.
+        :param seed: the seed to use for the benchmark. If None, then the seed from the benchmark definition will be used.
         """
         try:
             assert not self.framework_install_required or self._is_setup_done(), \
                 f"Framework {self.framework_name} [{self.framework_def.version}] is not installed."
 
             task_defs = self._get_task_defs(tasks)
-            jobs = flatten([self._task_jobs(task_def, folds) for task_def in task_defs])
+            jobs = flatten([self._task_jobs(task_def, folds, seed) for task_def in task_defs])
             results = self._run_jobs(jobs)
             log.info(f"Processing results for {self.sid}")
             log.debug(results)
@@ -282,22 +283,23 @@ class Benchmark:
             raise ValueError(f"Task {task_def.name} is disabled, please enable it first.")
         return task_def
 
-    def _task_jobs(self, task_def, folds=None):
+    def _task_jobs(self, task_def, folds=None, seed=None):
         folds = (range(task_def.folds) if folds is None
                  else folds if isinstance(folds, list) and all(isinstance(f, int) for f in folds)
                  else [folds] if isinstance(folds, int)
                  else None)
         if folds is None:
             raise ValueError("Fold value should be None, an int, or a list of ints.")
-        return list(filter(None, [self._make_job(task_def, f) for f in folds]))
+        return list(filter(None, [self._make_job(task_def, f, seed) for f in folds]))
 
-    def _make_job(self, task_def, fold: int):
+    def _make_job(self, task_def, fold: int, seed: int | None = None):
         """
         runs the framework against a given fold
         :param task_def: the task to run
         :param fold: the specific fold to use on this task
+        :param seed: the seed to use for the benchmark. If None, then the seed from the benchmark definition will be used.
         """
-        return BenchmarkTask(self, task_def, fold).as_job() if not self._skip_job(task_def, fold) else None
+        return BenchmarkTask(self, task_def, fold, seed=seed).as_job() if not self._skip_job(task_def, fold) else None
 
     @lazy_property
     def _job_history(self):
@@ -470,11 +472,12 @@ class TaskConfig:
 
 class BenchmarkTask:
 
-    def __init__(self, benchmark: Benchmark, task_def, fold):
+    def __init__(self, benchmark: Benchmark, task_def, fold, seed: int | None = None):
         """
 
         :param task_def:
         :param fold:
+        :param seed:
         """
         self.benchmark = benchmark
         self._task_def = task_def
@@ -485,7 +488,7 @@ class BenchmarkTask:
             fold=fold,
             metrics=task_def.metric,
             quantile_levels=task_def.quantile_levels,
-            seed=rget().seed(fold),
+            seed=seed if seed is not None else rget().seed(fold),
             max_runtime_seconds=task_def.max_runtime_seconds,
             cores=task_def.cores,
             max_mem_size_mb=task_def.max_mem_size_mb,

@@ -1,5 +1,8 @@
 #!/bin/bash
-# Usage: sbatch run_benchmark_slurm.sh <framework> <benchmark>
+# Usage example:
+#   sbatch -p testdlc_gpu-rtx2080 \
+#   ./scripts/time-series-benchmark/run_benchmark_single_task_slurm.sh \
+#   tabpfn-ts-sincos point_forecast_skip_10000 m4_daily 0 11682927
 
 
 #SBATCH --job-name=time_series_benchmark
@@ -22,6 +25,8 @@ FRAMEWORK=$1
 BENCHMARK=$2
 TASK_NAME=$3
 CONSTRAINT="4h16c"
+SEED=$4
+WANDB_GROUP_ID=$5
 
 WANDB_PROJECT="tabpfn-time-series"
 
@@ -30,4 +35,6 @@ python runbenchmark.py $FRAMEWORK $BENCHMARK $CONSTRAINT \
   -t $TASK_NAME \
   --wandb_project $WANDB_PROJECT \
   --wandb_tags $CONSTRAINT \
-  --debug_jid $SLURM_JOB_ID
+  --wandb_group_id $WANDB_GROUP_ID \
+  --debug_jid $SLURM_JOB_ID \
+  --seed $SEED

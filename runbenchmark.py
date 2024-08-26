@@ -106,6 +106,7 @@ parser.add_argument("--wandb_tags", nargs='+', type=str, default=None,
                     help="Tags for the WandB run.")
 parser.add_argument("--debug_jid", type=str, default=None, help="Debug job id.")
 parser.add_argument("--wandb_group_id", type=str, default=None)
+parser.add_argument("--seed", type=int, default=None, help="Seed for the benchmark.")
 
 # group = parser.add_mutually_exclusive_group()
 # group.add_argument('--keep-scores', dest='keep_scores', action='store_true',
@@ -219,10 +220,12 @@ try:
                 "constraint": bench.constraint_name,
                 "job_id": args.debug_jid,
                 "task": args.task,
+                "seed": args.seed,
             }
+            
             wandb.log(config)
 
-        res = bench.run(args.task, args.fold)
+        res = bench.run(args.task, args.fold, args.seed)
 
     if args.wandb_project:
 

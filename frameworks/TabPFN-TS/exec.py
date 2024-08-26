@@ -8,7 +8,7 @@ from frameworks.shared.callee import call_run, result
 from frameworks.shared.utils import Timer, load_timeseries_dataset
 
 from tabpfn_ts.data import TimeSeriesDataFrame
-from tabpfn_ts.pipeline import PredictionPipeline
+from tabpfn_ts.pipeline import PipelineFactory
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def run(dataset, config):
 
     framework_params=config.framework_params
     tabpfn_ts_config_file = TABPFN_TS_CONFIG_FILE_DIR / framework_params["config_file"]
-    pipeline = PredictionPipeline.from_config_file(tabpfn_ts_config_file)
+    pipeline = PipelineFactory.from_config_file(tabpfn_ts_config_file, seed=config.seed)
 
     with Timer() as predict:
         pred = pipeline.predict(

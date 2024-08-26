@@ -1,18 +1,28 @@
 #!/bin/bash
 
 # This file is used to generate sbatch script (depending on the input) and run the script
-# Usage: ./run_benchmark_slurm_master.sh FRAMEWORK BENCHMARK
+# Usage: ./run_benchmark_slurm_master.sh --framework FRAMEWORK --benchmark BENCHMARK [--cluster_partition CLUSTER_PARTITION] [--seed SEED]
 
-source ~/.time_bashrc
+source ~/.time_bashrc > /dev/null 2>&1
 
-FRAMEWORK=$1
-BENCHMARK=$2
-CLUSTER_PARTITION=$3
+# Parse named arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --framework) FRAMEWORK="$2"; shift ;;
+        --benchmark) BENCHMARK="$2"; shift ;;
+        --cluster_partition) CLUSTER_PARTITION="$2"; shift ;;
+        --seed) SEED="$2"; shift ;;
+        --task) TASK="$2"; shift ;;
+        --constraint) CONSTRAINT="$2"; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
 
 # assert FRAMEWORK and BENCHMARK are not empty
 if [ -z "$FRAMEWORK" ] || [ -z "$BENCHMARK" ]; then
-    echo "ERROR: FRAMEWORK and BENCHMARK must be provided"
-    echo "Usage: ./run_benchmark_slurm_master.sh FRAMEWORK BENCHMARK"
+    echo "ERROR: --framework and --benchmark must be provided"
+    echo "Usage: ./run_benchmark_slurm_master.sh --framework FRAMEWORK --benchmark BENCHMARK [--cluster_partition CLUSTER_PARTITION] [--seed SEED]"
     exit 1
 fi
 
@@ -20,6 +30,30 @@ fi
 if [ -z "$CLUSTER_PARTITION" ]; then
     CLUSTER_PARTITION="mlhiwidlc_gpu-rtx2080"
 fi
+
+# if SEED is not provided, set to default value (0)
+if [ -z "$SEED" ]; then
+    SEED=0
+fi
+
+# if TASK is not provided, set to default value (all tasks)
+if [ -z "$TASK" ]; then
+    TASK="all"
+fi
+
+# if CONSTRAINT is not provided, set to default value (4h16c)
+if [ -z "$CONSTRAINT" ]; then
+    CONSTRAINT="4h16c"
+fi
+
+echo ""
+echo "Running benchmark with the following parameters:"
+echo " . FRAMEWORK: $FRAMEWORK"
+echo " . BENCHMARK: $BENCHMARK"
+echo " . CLUSTER_PARTITION: $CLUSTER_PARTITION"
+echo " . SEED: $SEED"
+echo " . TASK: $TASK"
+echo " . CONSTRAINT: $CONSTRAINT"
 
 JOB_NAME=time_series_benchmark
 MEMORY=32G
@@ -72,7 +106,8 @@ ID_TO_TASK_MAPPING_PATH=$AUTOMLBENCHMARK_CONFIG_PATH/id_to_task_mapping.yaml
 
 FRAMEWORK=$FRAMEWORK
 BENCHMARK=$BENCHMARK
-CONSTRAINT="4h16c"
+CONSTRAINT=$CONSTRAINT
+SEED=$SEED
 
 TASK_NAME=\$(python <<EOF
 import yaml
@@ -89,7 +124,8 @@ python runbenchmark.py \$FRAMEWORK \$BENCHMARK \$CONSTRAINT \\
   --wandb_project \$WANDB_PROJECT \\
   --wandb_tags \$CONSTRAINT \\
   --wandb_group_id \$SLURM_ARRAY_JOB_ID \\
-  --debug_jid \$SLURM_JOB_ID
+  --debug_jid \$SLURM_JOB_ID \\
+  --seed \$SEED
 EOT
 
 echo "Generated sbatch script: $SBATCH_SCRIPT_PATH"
