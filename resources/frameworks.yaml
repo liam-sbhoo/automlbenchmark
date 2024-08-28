@@ -310,10 +310,25 @@ TabPFN-TS-Linear-SinCos:
   params:
     config_file: "linear_sincos.json"
 
+TabPFN-TS-Linear-Comp-Period:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period.json"
+
+TabPFN-TS-Comp-Period:
+  extends: TabPFN-TS
+  params:
+    config_file: "comp_period.json"
+
 TabPFN-TS-Linear-SinCos-Comp-Period:
   extends: TabPFN-TS
   params:
     config_file: "linear_sincos_comp_period.json"
+
+TabPFN-TS-Linear-SinCos-Comp-PeriodSC:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_sincos_comp_periodsc.json"
 
 TabPFN-TS-SP-Comp:
   extends: TabPFN-TS
@@ -329,6 +344,17 @@ TabPFN-TS-Linear-Quadratic-Comp:
   extends: TabPFN-TS
   params:
     config_file: "linear_quadratic_comp.json"
+
+
+TabPFN-TS-Linear-Quadratic-SinCos-Comp-Period:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_quadratic_sincos_comp_period.json"
+
+TabPFN-TS-Linear-SinCos-Comp:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_sincos_comp.json"
 
 StatsForecast:
   version: 'stable'
