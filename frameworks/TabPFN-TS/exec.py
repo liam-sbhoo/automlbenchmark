@@ -36,6 +36,10 @@ def run(dataset, config):
             train_tsdf=train_data,
             predict_length=dataset.forecast_horizon_in_steps,
             quantile_config=config.quantile_levels,
+            dataset_metadata={
+                "freq": dataset.freq,
+                "seasonality": dataset.seasonality,
+            }
         )
 
     # Add columns necessary for the metric computation + quantile forecast to `optional_columns`

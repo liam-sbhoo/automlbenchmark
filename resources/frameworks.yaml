@@ -320,6 +320,26 @@ TabPFN-TS-Comp-Period:
   params:
     config_file: "comp_period.json"
 
+TabPFN-TS-Comp-Period-Relevant:
+  extends: TabPFN-TS
+  params:
+    config_file: "comp_period_relevant.json"
+
+TabPFN-TS-Linear-Comp-Period-Relevant:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_relevant.json"
+
+TabPFN-TS-Comp-PeriodSC-Relevant:
+  extends: TabPFN-TS
+  params:
+    config_file: "comp_periodsc_relevant.json"
+
+TabPFN-TS-Linear-Comp-PeriodSC-Relevant:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_periodsc_relevant.json"    
+
 TabPFN-TS-Linear-SinCos-Comp-Period:
   extends: TabPFN-TS
   params:
