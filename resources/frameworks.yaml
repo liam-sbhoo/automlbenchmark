@@ -52,6 +52,11 @@ AutoGluon_gq:
   params:
     presets: good_quality
 
+AutoGluon_Chronos_Small:
+  extends: AutoGluon
+  params:
+    presets: chronos_small
+
 autosklearn:
   version: 'stable'
   description: |
