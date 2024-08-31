@@ -320,6 +320,61 @@ TabPFN-TS-Linear-Comp-Period:
   params:
     config_file: "linear_comp_period.json"
 
+TabPFN-TS-Linear-Comp-Period-Context50:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_context50.json"
+
+TabPFN-TS-Linear-Comp-Period-Context100:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_context100.json"
+
+TabPFN-TS-Linear-Comp-Period-Context150:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_context150.json"
+
+TabPFN-TS-Linear-Comp-Period-Context200:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_context200.json"
+
+TabPFN-TS-Linear-Comp-Period-Context400:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_context400.json"
+
+TabPFN-TS-Linear-Comp-Period-ContextEnsemble100:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_contextensemble100.json"
+
+TabPFN-TS-Linear-Comp-Period-ContextEnsemble50-100:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_contextensemble50-100.json"
+
+TabPFN-TS-Linear-Comp-Period-ContextEnsemble50-100-200:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_contextensemble50-100-200.json"
+
+TabPFN-TS-Linear-Comp-Period-ContextEnsemble50-100-200-Without-Full:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period_contextensemble50-100-200-without-full.json"
+
+TabPFN-TS-Linear-Comp-Period-QN-SP:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period.qn_sp.json"
+
+TabPFN-TS-Linear-Comp-Period-QN:
+  extends: TabPFN-TS
+  params:
+    config_file: "linear_comp_period.qn.json"
+
 TabPFN-TS-Comp-Period:
   extends: TabPFN-TS
   params:

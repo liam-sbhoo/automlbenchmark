@@ -141,6 +141,7 @@ def visualize_predictions(
         item_ids: list[int],
         save_dir: Path,
         pipeline = None,
+        filename_suffix: str | None = None,
     ):
 
     from tabpfn_ts.data.utils import plot_pred_and_actual_ts
@@ -172,7 +173,7 @@ def visualize_predictions(
         train=selected_train_tsdf,
         test=selected_test_tsdf,
         show_points=False,
-        save_path=save_dir / "predictions_from_history.png"
+        save_path=save_dir / f"predictions_from_history{filename_suffix}.png"
     )
 
     # Visualize the predictions from inference (if provided, may take a while)
@@ -194,19 +195,17 @@ def visualize_predictions(
             train=selected_train_tsdf,
             test=gt_tsdf,
             show_points=False,
-            save_path=save_dir / "predictions_from_inference.png"
+            save_path=save_dir / f"predictions_from_inference{filename_suffix}.png"
         )
-
-
-        
 
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('-k', type=int, default=10)
-    parser.add_argument('-p', "--pipeline", type=str, default="tabpfn-ts-linear-comp-period-relevant")
+    parser.add_argument('-p', "--pipeline", type=str, required=True)
     parser.add_argument('-d', '--history-dir', type=str, required=True)
     parser.add_argument('--rerun-inference', action='store_true')
+    parser.add_argument('--filename-suffix', type=str, default=None)
     args = parser.parse_args()
 
     history_dir = Path(args.history_dir)
@@ -233,6 +232,7 @@ def main():
         item_ids=worst_k_item_ids,
         save_dir=history_dir,
         pipeline=pipeline if args.rerun_inference else None,
+        filename_suffix=args.filename_suffix,
     )
 
     print(f"Done")
