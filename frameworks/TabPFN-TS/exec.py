@@ -14,7 +14,8 @@ from tabpfn_ts.pipeline import PipelineFactory
 logger = logging.getLogger(__name__)
 
 # Temporary (for development)
-TABPFN_TS_CONFIG_FILE_DIR = Path("/home/hoos/hoos-time/playground/tabpfn-time-series/tabpfn_ts/pipeline/config")
+CURR_DIR = Path(__file__).parent
+TABPFN_TS_CONFIG_FILE_DIR = CURR_DIR / "../../../tabpfn-time-series/tabpfn_ts/pipeline/config"
 
 
 def run(dataset, config):

@@ -42,8 +42,8 @@ python $DOWNLOAD_DATASETS_SCRIPT -d $DATASETS_DIR
 NUM_SERIES_THRESHOLD=10000
 python $GENERATE_TASK_CONFIGS_SCRIPT -d $DATASETS_DIR -b $BENCHMARK_FILES_OUTPUT_DIR -s $NUM_SERIES_THRESHOLD
 
-# Copy the generated task config to the benchmark directory
-cp $HOME/.config/automlbenchmark/benchmarks/* $ROOT_DIR/resources/benchmarks
+# Create a soft link to the local benchmark config
+ln -s $HOME/.config/automlbenchmark $ROOT_DIR/local_automlbenchmark_config
 
 ### End of python venv
 deactivate
